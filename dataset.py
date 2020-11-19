@@ -58,23 +58,3 @@ def getLonLatDataLoader(lonlatList, imgSavePath=r"./imgTemp", BSize=4, nWorkers=
     data_set = lonlatDataset(lonlatList, imgSavePath=imgSavePath)
     return data.DataLoader(data_set, batch_size=BSize, shuffle=False, num_workers=nWorkers, pin_memory=pinMem)
 
-
-def inference(model, data_loader, device=torch.device('cuda:0'), device_ids=(0, 1), comment="xxx", save_path="./CKPT/"):
-    save_path = save_path + "/" + comment
-    
-    model.to(device)    
-    if os.path.exists(save_path + "/ckpt.pth"):
-        ckpt = torch.load(save_path + "/ckpt.pth", map_location=torch.device('cpu'))
-        model.load_state_dict(ckpt["model"])
-        model = nn.DataParallel(model, device_ids=device_ids)
-        model.eval()
-        
-        all_pred = []
-        with tqdm(data_loader, total=len(data_loader)) as t:
-            with torch.no_grad():
-                for index, img in enumerate(t):
-                    pred = torch.argmax(torch.softmax(model(img), dim=1), dim=1)
-                    all_pred.extend(pred)
-        return all_pred
-    else:
-        print("check point not found")
