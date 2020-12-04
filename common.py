@@ -6,6 +6,7 @@ import torch.utils.data as data
 import osr
 import os
 import gdal
+from tqdm import tqdm
 
 
 def inference(model, data_loader, device=torch.device('cuda:0'), device_ids=(0, 1), comment="xxx", save_path="./CKPT/"):
@@ -27,7 +28,7 @@ def inference(model, data_loader, device=torch.device('cuda:0'), device_ids=(0, 
                 for idx, img in enumerate(t):
                     pred = torch.argmax(torch.softmax(model(img), dim=1), dim=1)
                     all_pred.extend(pred)
-        return all_pred
+        return torch.tensor(all_pred)
     else:
         print("check point not found")
 
@@ -109,12 +110,13 @@ def getLonLatListFromImage(imgPath):
         raise Exception("input should be a GeoTiff image")
     ds = gdal.Open(imgPath)
     imgW, imgH = ds.RasterXSize, ds.RasterYSize
-
+    img = ds.ReadAsArray(0, 0, imgW, imgH)
     lonlatList = []
     for r in range(imgH):
         for c in range(imgW):
-            geox, geoy = imagexy2geo(ds, r, c)
+            geox, geoy = imagexy2geo(ds, c+0.5, r+0.5)
             lon, lat = geo2lonlat(ds, geox, geoy)
-            lonlatList.append((lon, lat))
+            sign = int(img[r, c])
+            lonlatList.append((lon, lat, sign))
 
-    return lonlatList
+    return np.array(lonlatList)

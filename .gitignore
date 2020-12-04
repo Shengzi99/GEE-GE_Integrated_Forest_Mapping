@@ -130,3 +130,11 @@ dmypy.json
 
 # pytorch checkpoint
 *.pth
+
+# image
+*.tif
+*.tiff
+*.TIF
+*.TIFF
+*.png
+*.jpg
