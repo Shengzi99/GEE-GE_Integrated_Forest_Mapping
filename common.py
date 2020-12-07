@@ -9,9 +9,9 @@ import gdal
 from tqdm import tqdm
 
 
-def inference(model, data_loader, device=torch.device('cuda:0'), device_ids=(0, 1), comment="xxx", save_path="./CKPT/"):
+def inference(model, data_loader, device=torch.device('cuda:0'), device_ids=(0, 1), comment="xxx", save_path="./CKPT/", pixelSize=(0.00026949, 0.00026949)):
     """
-    使用model和data_loader加载ckpt进行预测，得到一个
+    使用model和data_loader加载ckpt进行预测，得到预测的图像类别和中心点偏置
     """
     save_path = save_path + "/" + comment
     
@@ -23,12 +23,21 @@ def inference(model, data_loader, device=torch.device('cuda:0'), device_ids=(0, 
         model.eval()
         
         all_pred = []
+        all_offset = None
         with tqdm(data_loader, total=len(data_loader)) as t:
             with torch.no_grad():
                 for idx, img in enumerate(t):
-                    pred = torch.argmax(torch.softmax(model(img), dim=1), dim=1)
+                    logits, CAM = model(img)
+                    pred = torch.argmax(torch.softmax(logits, dim=1), dim=1)
+                    offsets = calcOffset(pred, CAM, pixelSize=pixelSize)
+
                     all_pred.extend(pred)
-        return torch.tensor(all_pred)
+                    if all_offset is None:
+                        all_offset = offsets
+                    else :
+                        all_offset = torch.cat([all_offset, offsets], dim=0)
+
+        return torch.tensor(all_pred), all_offset
     else:
         print("check point not found")
 
@@ -120,3 +129,43 @@ def getLonLatListFromImage(imgPath):
             lonlatList.append((lon, lat, sign))
 
     return np.array(lonlatList)
+
+#---------------------------------------------------------------------------------------------------------------------------------------------
+# 3. 由CAM获取中心点偏执。及将偏置应用于LonLatList
+#---------------------------------------------------------------------------------------------------------------------------------------------
+
+def calcOffset(prediction, CAM, pixelSize=None):
+    """
+    通过CAM获取中心点偏置
+    Params:
+        prediction - CNN预测的类别结果，形状[N]
+        CAM - CNN输出的Class Activation Map，形状[N, C, H, W]
+        pixelSize - 一个CAM像元在lon和lat方向的大小，单位为度。如果输入为None则返回offsets值单位为像元个数, tuple(longitude_size, latitude_size)
+    Return:
+        offsets - 计算得到的每一张图片在longitude和latitude方向的offset，形状[N, 2]
+    """
+
+    # 相平面坐标轴y和纬度坐标轴是相反的
+    pixelSize = (pixelSize[0], -pixelSize[1])
+    idx_pad = torch.arange(0, CAM.shape[0]*CAM.shape[1], CAM.shape[1], device=CAM.device)
+    idx = idx_pad + prediction
+
+    CAM_selected = CAM.view(-1, CAM.shape[2], CAM.shape[3]).index_select(0, idx)
+    CAM_argmax = torch.argmax(CAM_selected.view(CAM_selected.shape[0], -1), dim=1)
+    
+    if pixelSize is None:
+        offsets = torch.stack([CAM_argmax % CAM.shape[3] - (CAM.shape[3] // 2), CAM_argmax // CAM.shape[3] - (CAM.shape[2] // 2)], dim=-1)
+    else:
+        offsets = torch.stack([(CAM_argmax % CAM.shape[3] - (CAM.shape[3] // 2)) * pixelSize[0], (CAM_argmax // CAM.shape[3] - (CAM.shape[2] // 2)) * pixelSize[1]], dim=-1)
+    
+    return offsets
+
+
+if __name__ == "__main__":
+    pred = torch.randint(0, 5, size=(1024, ))
+    CAM = torch.randint(0, 10, size=(1024, 5, 5, 5))
+    CAM = CAM/CAM.max().float()
+
+    print(pred.shape, CAM.shape)
+    offsets = calcOffset(pred, CAM)
+    print(offsets)

@@ -7,7 +7,13 @@ class ResNet101(nn.Module):
     """
     Re-implementation of He, K., et al. (2016). Deep Residual Learning for Image Recognition. CVPR
     """
+    @staticmethod
+    def weigth_init(m):
+        if isinstance(m, nn.Conv2d):
+            nn.init.normal_(m.weight, mean=0, std=0.01)
+
     def __init__(self, in_ch=3, n_classes=4):
+        self.n_classes = n_classes
         super().__init__()
         # Conv1---------------------------------------------------------------------------------------------------------
         self.conv1 = nn.Sequential(nn.Conv2d(in_ch, 64, 3, stride=2, padding=1), nn.BatchNorm2d(64), nn.ReLU(),
@@ -31,18 +37,23 @@ class ResNet101(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Linear(2048, n_classes)
 
+        self.apply(self.weigth_init)
+
     def forward(self, inputs):
         inputs = self.conv1(inputs)
         inputs = self.conv2(inputs)
         inputs = self.conv3(inputs)
         inputs = self.conv4(inputs)
         inputs = self.conv5(inputs)
+        
+        with torch.no_grad():
+            CAM = self.fc(inputs.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
 
         inputs = self.avgpool(inputs)
         inputs = inputs.view(inputs.shape[0], -1)
         outputs = self.fc(inputs)
 
-        return outputs
+        return outputs, torch.softmax(CAM, dim=1)
 
 
 class Resblock(nn.Module):

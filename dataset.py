@@ -58,7 +58,7 @@ class lonlatDataset(data.Dataset):
 
 
 class lonlatDataset_local(data.Dataset):
-    def __init__(self, lonlatList, imgPath, patchSize=320):
+    def __init__(self, lonlatList, imgPath, patchSize=165):
         self.coordList = lonlatList
 
         self.patchSize = patchSize
@@ -82,7 +82,7 @@ class lonlatDataset_local(data.Dataset):
     
 def getLonLatDataLoader(lonlatList, APIKEY, local=False, imgSavePath=r"./imgTemp", BSize=4, nWorkers=4, pinMem=True):
     if local:
-        data_set = lonlatDataset_local(lonlatList, imgPath=imgSavePath, patchSize=320)
+        data_set = lonlatDataset_local(lonlatList, imgPath=imgSavePath, patchSize=165)
     else:
         data_set = lonlatDataset(lonlatList, imgSavePath=imgSavePath, APIKEY=APIKEY)
         if not os.path.exists(imgSavePath):
