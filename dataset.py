@@ -4,13 +4,15 @@ import torch.utils.data as data
 
 import os
 import numpy as np
+import numba
+import matplotlib.pyplot as plt
 import gdal
 from urllib import request
 from PIL import Image
 import geohash2
 from tqdm import tqdm as tqdm
 
-from common import *
+import common
 
 
 def download_per_pic(lng, lat, zoom_level, size, api_key, save_path, saveAs=None):
@@ -59,24 +61,27 @@ class lonlatDataset(data.Dataset):
 
 class lonlatDataset_local(data.Dataset):
     def __init__(self, lonlatList, imgPath, patchSize=165):
-        self.coordList = lonlatList
-
+        self.coordList = lonlatList.copy()
         self.patchSize = patchSize
-        self.imgDS = gdal.Open(imgPath)
-        self.imgW, self.imgH = self.imgDS.RasterXSize, self.imgDS.RasterYSize
-        # self.imgArray = self.imgDS.ReadAsArray(0, 0, self.imgW, self.imgH)
+
+        imgDS = gdal.Open(imgPath, gdal.GA_ReadOnly)
+        self.imgW, self.imgH = imgDS.RasterXSize, imgDS.RasterYSize
+        self.trans = np.array(imgDS.GetGeoTransform())
+        self.imgArray = imgDS.ReadAsArray()
+        self.imgDS = imgDS
 
     def __len__(self):
         return len(self.coordList)
 
     def __getitem__(self, index):     
         lon, lat = self.coordList[index][0], self.coordList[index][1]
-        geox, geoy = lonlat2geo(self.imgDS, lon, lat)
-        imgx, imgy = geo2imagexy(self.imgDS, geox, geoy)
+        # geox, geoy = common.lonlat2geo(self.imgDS, lon, lat)
+        geox, geoy = lon, lat
+        imgx, imgy = common.geo2imagexy(self.trans, geox, geoy)
         ulx, uly = int(imgx - (self.patchSize//2)), int(imgy - (self.patchSize//2))
 
-        img = self.imgDS.ReadAsArray(ulx, uly, self.patchSize, self.patchSize)
-        # img = self.imgArray[:, ulx:ulx+self.patchSize, uly:uly+self.patchSize]
+        # img = self.imgDS.ReadAsArray(ulx, uly, self.patchSize, self.patchSize)
+        img = self.imgArray[:, uly:uly+self.patchSize, ulx:ulx+self.patchSize].copy()
         return torch.as_tensor(img/max(img.max(), 0.1), dtype=torch.float)
 
     

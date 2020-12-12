@@ -345,9 +345,9 @@ def downpics(urls,multi=20):
         def up():
             global COUNT
             COUNT+=1
-            # print("\b"*45 , end='')
-            # print("DownLoading ... [{0}/{1}]".format(COUNT,s),end='')
-            print("[{0}/{1}]".format(COUNT,s),end='\n')
+            print("\b"*45 , end='')
+            print("DownLoading ... [{0}/{1}]".format(COUNT,s),end='')
+            # print("[{0}/{1}]".format(COUNT,s),end='\n')
         return up
 
     url_len=len(urls)
@@ -439,6 +439,8 @@ def getpic_by_range(x1, y1, x2, y2, z, source='google', outfile="MAP_OUT.png", s
     print('Pics Merged！ Exporting......')
     outpic.save(outfile)
     print('Exported to file！')
+    global COUNT
+    COUNT = 0
     return {"LT":(pos1x,pos1y),"RT":(pos2x,pos1y),"LB":(pos1x,pos2y),"RB":(pos2x,pos2y),"z":z}
 
 
@@ -519,6 +521,8 @@ def getpic_tif(x1, y1, x2, y2, z, source='google', out_filename='outfile.tif', s
 
     in_ds = None
     os.remove('tmp.tif')
+    global COUNT
+    COUNT = 0
 
 
 def getpic_tif_by_shape(shape_filename, z, out_dir):
