@@ -328,7 +328,7 @@ def getRFSampleList(llList_sure_pos, llList_sure_neg, llList_unsure, CNNmodel, g
 def getRFSampleFC(image, llList_forest_sample):
 
     CrdClsList = ee.List(llList_forest_sample)
-    mapped = CrdClsList.map(lambda x : ee.Feature(ee.Algorithms.GeometryConstructors.Point(ee.List(x).slice(0, 2)), {"forest":ee.List(x).getNumber(2).uint8()}))
+    mapped = CrdClsList.map(lambda x : ee.Feature(ee.Algorithms.GeometryConstructors.Point(ee.List(x).slice(0, 2)), {"forest":ee.List(x).getNumber(2).int()}))
     fc_points = ee.FeatureCollection(mapped)
     sample_train = image.sampleRegions(collection=fc_points, geometries=True, scale=30)
     
