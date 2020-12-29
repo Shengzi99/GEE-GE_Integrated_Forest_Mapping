@@ -72,6 +72,23 @@ def inference(model, data_loader, device=torch.device('cuda:0'), pixelSize=(0.00
 
     return torch.tensor(all_pred), all_offset
 
+
+def inference_densePred(model, data_loader, device=torch.device('cuda:0'), pixelSize=(0.00026949, 0.00026949), desc=None):
+    """
+    使用model预测data_loader中的数据，得到预测的图像类别和中心点偏置
+    """      
+    model.eval()
+    all_pred = []
+    with tqdm(data_loader, total=len(data_loader), desc=desc) as t:
+        with torch.no_grad():
+            for idx, img in enumerate(t):
+                img = img.to(device)
+                logits, CAM = model(img)
+                pred = torch.argmax(torch.softmax(logits, dim=1), dim=1)
+
+                all_pred.extend(pred)
+
+    return torch.tensor(all_pred)
 #----------------------------------------------------------------------------------------------------------------------------------------------
 # 1. 相平面坐标和地理坐标互转相关函数
 # ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -333,3 +350,19 @@ def getRFSampleFC(image, llList_forest_sample):
     sample_train = image.sampleRegions(collection=fc_points, geometries=True, scale=30)
     
     return sample_train
+
+#---------------------------------------------------------------------------------------------------------------------------------------------
+# 5. 从确定区域（直接从融合产品提取）和不确定区域（CNN预测）提取随机森林样本点
+#---------------------------------------------------------------------------------------------------------------------------------------------
+def saveTiff(imgArray, savePath, dtype, geo_trans, geo_proj, no_data=None):
+    "输入的imgArray应为CHW格式"
+    driver = gdal.GetDriverByName('GTiff')
+    dataset = driver.Create(savePath, imgArray.shape[-1], imgArray.shape[-2], imgArray.shape[-3], dtype)
+    dataset.SetGeoTransform(geo_trans)
+    dataset.SetProjection(geo_proj)
+    for ch in range(imgArray.shape[-3]):
+        dataset.GetRasterBand(ch+1).WriteArray(imgArray[ch, :, :])
+    if no_data is not None:
+            dataset.SetNoDataValue(no_data)
+    dataset.FlushCache()  # 将数据写入硬盘
+    dataset = None

@@ -345,15 +345,18 @@ def downpics(urls,multi=20):
         def up():
             global COUNT
             COUNT+=1
-            print("\b"*45 , end='')
-            print("DownLoading ... [{0}/{1}]".format(COUNT,s),end='')
-            # print("[{0}/{1}]".format(COUNT,s),end='\n')
+            # print("\b"*45 , end='')
+            # print("DownLoading ... [{0}/{1}]".format(COUNT,s),end='')
+            if int((COUNT/s)*100)%10==0 and ((COUNT/s)*100 - int((COUNT/s)*100))< 0.07:
+                print("%d%%" % int((COUNT/s)*100), end=" ")
+            # print("[{0}/{1}]".format(COUNT,s),end=' ')
         return up
 
     url_len=len(urls)
     datas=[None] * url_len
     if multi <1 or multi >20 or not isinstance(multi,int):
         raise Exception("multi of Downloader shuold be int and between 1 to 20.")
+    print("DownLoading... ", end="")
     tasks=[Downloader(i,multi,urls,datas,makeupdate(url_len)) for i in range(multi)]
     for i in tasks:
         i.start()
@@ -426,7 +429,7 @@ def getpic_by_range(x1, y1, x2, y2, z, source='google', outfile="MAP_OUT.png", s
 
     datas = downpics(urls)
 
-    print("\nDownload Finished！ Pics Mergeing......")
+    print("\nDownload Finished！ Pics Mergeing...")
     outpic = pil.new('RGBA', (lenx * 256, leny * 256))
     for i, data in enumerate(datas):
 
@@ -436,7 +439,7 @@ def getpic_by_range(x1, y1, x2, y2, z, source='google', outfile="MAP_OUT.png", s
         y, x = i // lenx, i % lenx
         outpic.paste(small_pic, (x * 256, y * 256))
 
-    print('Pics Merged！ Exporting......')
+    print('Pics Merged！ Exporting...')
     outpic.save(outfile)
     print('Exported to file！')
     global COUNT
@@ -453,7 +456,7 @@ def getpic_tif(x1, y1, x2, y2, z, source='google', out_filename='outfile.tif', s
     pos2x, pos2y = wgs84_to_tile(x2, y2, z)
     lenx = pos2x - pos1x + 1
     leny = pos2y - pos1y + 1
-    print("Total number：{x} X {y}".format(x=lenx, y=leny))
+    print("Total number：{x} X {y}".format(x=lenx, y=leny), end=" ")
 
     urls = [geturl(source, i, j, z, style) for j in range(pos1y, pos1y + leny) for i in range(pos1x, pos1x + lenx)]
 
