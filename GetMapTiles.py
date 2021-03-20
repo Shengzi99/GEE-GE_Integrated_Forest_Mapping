@@ -20,8 +20,8 @@ import os
 # 在本地运行该爬虫需要进行科学上网，并设置相应的端口
 # 这里的 10809 端口为 v2rayN 默认的端口，使用其他软件进行科学上网需要将这里的 10809 更改成对应的端口
 # 在 colab 上面运行时，把这两句注释掉
-# os.environ['HTTP_PROXY'] = 'http://127.0.0.1:10809'
-# os.environ['HTTPS_PROXY'] = 'https://127.0.0.1:10809'
+os.environ['HTTP_PROXY'] = 'http://127.0.0.1:10809'
+os.environ['HTTPS_PROXY'] = 'https://127.0.0.1:10809'
 
 MAP_URLS = {
     "google": "http://mt2.google.cn/vt/lyrs={style}&src=app&x={x}&y={y}&z={z}",
@@ -493,12 +493,14 @@ def getpic_tif(x1, y1, x2, y2, z, source='google', out_filename='outfile.tif', s
     geotransform[1] = cell_size_x
     geotransform[5] = -cell_size_y
 
-    if os.path.exists('tmp.tif'):
-        os.remove('tmp.tif')
+    tmpPath = out_filename
+    tmpPath = tmpPath.replace(out_filename.split("/")[-1], "tmp.tif")
+    if os.path.exists(tmpPath):
+        os.remove(tmpPath)
 
-    save_tif_image(img, 'tmp.tif', geo_transform=tuple(geotransform))
+    save_tif_image(img, tmpPath, geo_transform=tuple(geotransform))
 
-    in_ds = gdal.Open('tmp.tif')
+    in_ds = gdal.Open(tmpPath)
     in_band = in_ds.GetRasterBand(1)
     xsize = in_band.XSize
     ysize = in_band.YSize
@@ -523,7 +525,7 @@ def getpic_tif(x1, y1, x2, y2, z, source='google', out_filename='outfile.tif', s
     save_tif_image(data, out_filename, geo_transform=tuple(geotrans))
 
     in_ds = None
-    os.remove('tmp.tif')
+    os.remove(tmpPath)
     global COUNT
     COUNT = 0
 

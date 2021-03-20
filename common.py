@@ -210,9 +210,9 @@ def getLonLatListFromArray(imgArray, trans):
 
 
 def getSP_SN_USsplit(llList_full):
-    idx_unsure = np.where((llList_full[:, 2]==2) + (llList_full[:, 2]==3))[0]
+    idx_unsure = np.where((llList_full[:, 2]==2) + (llList_full[:, 2]==3) + (llList_full[:, 2]==1))[0]
     idx_sure_pos = np.where((llList_full[:, 2]==4) + (llList_full[:, 2]==5))[0]
-    idx_sure_neg = np.where((llList_full[:, 2]==0) + (llList_full[:, 2]==1))[0]
+    idx_sure_neg = np.where((llList_full[:, 2]==0))[0]
 
     llList_unsure = llList_full[idx_unsure, ...].copy()
     llList_sure_pos = llList_full[idx_sure_pos, ...].copy()
@@ -262,12 +262,12 @@ def download_ffge(savePath, feature05, feature01, forest_fuse):
     assert ID_05d == feature05.getNumber("ID_05d").getInfo(), "0.1d feature should match with 0.5d feature"
     assert ID_5d == feature01.getNumber("ID_5d").getInfo(), "0.1d feature should match with 0.5d feature"
 
-    if not os.path.exists(savePath + "grid%d" % ID_5d):
-        os.mkdir(savePath + "grid%d" % ID_5d)
+    if not os.path.exists(savePath + "/grid%d" % ID_5d):
+        os.mkdir(savePath + "/grid%d" % ID_5d)
 
-    path_ge = savePath + "grid%d/ge_%d_%d_%d.tif" % (ID_5d, ID_5d, ID_05d, ID_01d)
-    path_ff01 = savePath + "grid%d/ff01_%d_%d_%d.tif" % (ID_5d, ID_5d, ID_05d, ID_01d)
-    path_ff05 = savePath + "grid%d/ff05_%d_%d.tif" % (ID_5d, ID_5d, ID_05d)
+    path_ge = savePath + "/grid%d/ge_%d_%d_%d.tif" % (ID_5d, ID_5d, ID_05d, ID_01d)
+    path_ff01 = savePath + "/grid%d/ff01_%d_%d_%d.tif" % (ID_5d, ID_5d, ID_05d, ID_01d)
+    path_ff05 = savePath + "/grid%d/ff05_%d_%d.tif" % (ID_5d, ID_5d, ID_05d)
 
     if not os.path.exists(path_ge):
         xmin01, ymin01 = feature01.getNumber("xmin").getInfo(), feature01.getNumber("ymin").getInfo()
